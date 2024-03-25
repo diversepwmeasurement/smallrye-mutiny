@@ -1,28 +1,34 @@
----
-name: Manual website deployment
-on:
-  workflow_dispatch:
-
 jobs:
   deploy-web-site:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.ref }}
-          token: ${{ secrets.RELEASE_TOKEN }}
-          fetch-depth: 0 # fetch all commits and branches for mike to work properly
-      - name: Setup yq (portable yaml processor)
-        uses: mikefarah/yq@master
-      - name: Install just
-        uses: taiki-e/install-action@just
-      - name: Setup Git
-        run: just -f .build/justfile-for-release -d . init-git
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: 3.x
-      - name: Install MkDocs dependencies
-        run: .build/install-mkdocs-deps.sh
-      - name: Deploy the website
-        run: .build/deploy-site.sh
+    - continue-on-error: true
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        ref: ${{ github.event.ref }}
+        token: ${{ secrets.RELEASE_TOKEN }}
+    - continue-on-error: true
+      name: Setup yq (portable yaml processor)
+      uses: mikefarah/yq@master
+    - continue-on-error: true
+      name: Install just
+      uses: taiki-e/install-action@just
+    - continue-on-error: true
+      name: Setup Git
+      run: just -f .build/justfile-for-release -d . init-git
+    - continue-on-error: true
+      name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: 3.x
+    - continue-on-error: true
+      name: Install MkDocs dependencies
+      run: .build/install-mkdocs-deps.sh
+    - continue-on-error: true
+      name: Deploy the website
+      run: .build/deploy-site.sh
+name: Manual website deployment
+on:
+  repository_dispatch:
+    types: trigger-ga___deploy-site.yml

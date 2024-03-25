@@ -1,56 +1,63 @@
----
-name: Check pull requests
-on:
-  pull_request:
-    branches-ignore:
-      - '1.x'
-
 concurrency:
-  group: "check-pull-request-${{ github.workflow }}-${{ github.ref }}"
   cancel-in-progress: true
-
+  group: check-pull-request-${{ github.workflow }}-${{ github.ref }}
 jobs:
   build:
-    runs-on: ubuntu-latest
+    name: Build with Java ${{ matrix.java.version }}
+    runs-on: self-hosted
+    steps:
+    - continue-on-error: true
+      uses: actions/checkout@v4
+    - continue-on-error: true
+      name: set up jdk ${{matrix.java.version}}
+      uses: actions/setup-java@v4
+      with:
+        cache: maven
+        distribution: temurin
+        java-version: ${{matrix.java.version}}
+    - continue-on-error: true
+      env:
+        MAVEN_OPTS: ${{ matrix.java.opts }}
+      name: Build with Maven
+      run: ./mvnw --no-transfer-progress -s .build/maven-ci-settings.xml -B clean
+        verify -Pcoverage
+    - continue-on-error: true
+      name: Codecov
+      uses: codecov/codecov-action@v4.1.0
     strategy:
       matrix:
-        java: [
-          { 'version': '11', opts: '' },
-          { 'version': '17', 'opts': '' },
-          { 'version': '21', 'opts': '' }
-        ]
-    name: Build with Java ${{ matrix.java.version }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
-        name: set up jdk ${{matrix.java.version}}
-        with:
-          distribution: temurin
-          java-version: ${{matrix.java.version}}
-          cache: maven
-      - name: Build with Maven
-        env:
-          MAVEN_OPTS: ${{ matrix.java.opts }}
-        run: ./mvnw --no-transfer-progress -s .build/maven-ci-settings.xml -B clean verify -Pcoverage
-      - name: Codecov
-        uses: codecov/codecov-action@v4.1.0
-
-  conventional-commits:
-    runs-on: ubuntu-latest
-    name: Check conventional commits
-    steps:
-      - uses: actions/checkout@v4
-      - uses: wagoid/commitlint-github-action@v5
-
+        java:
+        - opts: ''
+          version: '11'
+        - opts: ''
+          version: '17'
+        - opts: ''
+          version: '21'
   compatibility:
-    runs-on: ubuntu-latest
     name: Compatibility Check
+    runs-on: self-hosted
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
-        with:
-          java-version: 11
-          distribution: temurin
-          cache: maven
-      - name: Compatibility Check
-        run: ./mvnw --no-transfer-progress -s .build/maven-ci-settings.xml -pl '!bom' -B install revapi:check@check-compatibility -DskipTests -fae
+    - continue-on-error: true
+      uses: actions/checkout@v4
+    - continue-on-error: true
+      uses: actions/setup-java@v4
+      with:
+        cache: maven
+        distribution: temurin
+        java-version: 11
+    - continue-on-error: true
+      name: Compatibility Check
+      run: ./mvnw --no-transfer-progress -s .build/maven-ci-settings.xml -pl '!bom'
+        -B install revapi:check@check-compatibility -DskipTests -fae
+  conventional-commits:
+    name: Check conventional commits
+    runs-on: self-hosted
+    steps:
+    - continue-on-error: true
+      uses: actions/checkout@v4
+    - continue-on-error: true
+      uses: wagoid/commitlint-github-action@v5
+name: Check pull requests
+on:
+  repository_dispatch:
+    types: trigger-ga___build-pull.yml

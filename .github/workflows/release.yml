@@ -1,62 +1,55 @@
-name: Release Smallrye Mutiny
-
-on:
-  workflow_dispatch:
-    inputs:
-      previousVersion:
-        description: 'Previous version'
-        required: true
-      version:
-        description: 'Release version'
-        required: true
-      deployWebsite:
-        description: 'Shall we deploy the website?'
-        required: true
-        default: 'true'
-      clearRevAPI:
-        description: 'Shall we clear RevAPI justifications?'
-        required: true
-        default: 'true'
-
 jobs:
   release:
-    runs-on: ubuntu-latest
     env:
-      GITHUB_TOKEN: ${{secrets.RELEASE_TOKEN}}
-      RELEASE_TOKEN: ${{ secrets.RELEASE_TOKEN }}
-      SECRET_FILES_PASSPHRASE: ${{ secrets.SECRET_FILES_PASSPHRASE }}
-      PREVIOUS_VERSION: ${{ github.event.inputs.previousVersion }}
-      RELEASE_VERSION: ${{ github.event.inputs.version }}      
-      DEPLOY_WEBSITE: ${{ github.event.inputs.deployWebsite }}
       CLEAR_REVAPI: ${{ github.event.inputs.clearRevAPI }}
-      JRELEASER_TAG_NAME: ${{ github.event.inputs.version }}
-      JRELEASER_PREVIOUS_TAG_NAME: ${{ github.event.inputs.previousVersion }}
+      DEPLOY_WEBSITE: ${{ github.event.inputs.deployWebsite }}
+      GITHUB_TOKEN: ${{secrets.RELEASE_TOKEN}}
       JRELEASER_GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
-
+      JRELEASER_PREVIOUS_TAG_NAME: ${{ github.event.inputs.previousVersion }}
+      JRELEASER_TAG_NAME: ${{ github.event.inputs.version }}
+      PREVIOUS_VERSION: ${{ github.event.inputs.previousVersion }}
+      RELEASE_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+      RELEASE_VERSION: ${{ github.event.inputs.version }}
+      SECRET_FILES_PASSPHRASE: ${{ secrets.SECRET_FILES_PASSPHRASE }}
+    runs-on: self-hosted
     steps:
-      - name: Git checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          token: ${{ secrets.RELEASE_TOKEN }}
-      - name: Java setup
-        uses: actions/setup-java@v4
-        with:
-          java-version: '11'
-          distribution: 'temurin'
-          cache: maven
-      - name: Install just
-        uses: taiki-e/install-action@just
-      - name: Install yq
-        uses: mikefarah/yq@master
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: 3.x
-      - name: Install MkDocs dependencies
-        run: .build/install-mkdocs-deps.sh
-      - name: Perform the release steps
-        run: |
-          curl -s "https://get.sdkman.io" | bash
-          source ~/.sdkman/bin/sdkman-init.sh && sdk install jbang
-          just -f .build/justfile-for-release -d . perform-release
+    - continue-on-error: true
+      name: Git checkout
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        token: ${{ secrets.RELEASE_TOKEN }}
+    - continue-on-error: true
+      name: Java setup
+      uses: actions/setup-java@v4
+      with:
+        cache: maven
+        distribution: temurin
+        java-version: '11'
+    - continue-on-error: true
+      name: Install just
+      uses: taiki-e/install-action@just
+    - continue-on-error: true
+      name: Install yq
+      uses: mikefarah/yq@master
+    - continue-on-error: true
+      name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: 3.x
+    - continue-on-error: true
+      name: Install MkDocs dependencies
+      run: .build/install-mkdocs-deps.sh
+    - continue-on-error: true
+      name: Perform the release steps
+      run: 'curl -s "https://get.sdkman.io" | bash
+
+        source ~/.sdkman/bin/sdkman-init.sh && sdk install jbang
+
+        just -f .build/justfile-for-release -d . perform-release
+
+        '
+name: Release Smallrye Mutiny
+on:
+  repository_dispatch:
+    types: trigger-ga___release.yml

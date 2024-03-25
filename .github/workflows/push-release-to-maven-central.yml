@@ -1,25 +1,26 @@
-name: Push a release to Maven Central
-
-on:
-  push:
-    tags:
-      - '2.*'
-
 jobs:
   release:
-    runs-on: ubuntu-latest
     env:
       SECRET_FILES_PASSPHRASE: ${{ secrets.SECRET_FILES_PASSPHRASE }}
+    runs-on: self-hosted
     steps:
-      - name: Git checkout
-        uses: actions/checkout@v4
-      - name: Java setup
-        uses: actions/setup-java@v4
-        with:
-          java-version: '11'
-          distribution: 'temurin'
-          cache: maven
-      - name: Install just
-        uses: taiki-e/install-action@just
-      - name: Deploy to Maven Central
-        run: just -f .build/justfile-for-release -d . deploy-to-maven-central
+    - continue-on-error: true
+      name: Git checkout
+      uses: actions/checkout@v4
+    - continue-on-error: true
+      name: Java setup
+      uses: actions/setup-java@v4
+      with:
+        cache: maven
+        distribution: temurin
+        java-version: '11'
+    - continue-on-error: true
+      name: Install just
+      uses: taiki-e/install-action@just
+    - continue-on-error: true
+      name: Deploy to Maven Central
+      run: just -f .build/justfile-for-release -d . deploy-to-maven-central
+name: Push a release to Maven Central
+on:
+  repository_dispatch:
+    types: trigger-ga___push-release-to-maven-central.yml
